@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <rect width="64" height="64" rx="14" fill="#0F3D2E"/>
+  <!-- Cart body -->
+  <path d="M14 20h4l5 18h18l4-12H22" stroke="#F5C842" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- Cart wheels -->
+  <circle cx="28" cy="42" r="2.5" fill="#52B788"/>
+  <circle cx="40" cy="42" r="2.5" fill="#52B788"/>
+  <!-- Sparkle -->
+  <path d="M42 16l1.5 3 3 1.5-3 1.5L42 25l-1.5-3-3-1.5 3-1.5z" fill="#F5C842"/>
+</svg>
