@@ -1,39 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
-/* ─── STORE CATALOG (with lat/lng for proximity matching) ──────────────────── */
-const STORE_CATALOG = [
-  // Publix — Greenville / Upstate SC
-  { id:"publix_gvl1",   name:"Publix",           chain:"publix",        emoji:"🟢", address:"1140 Woodruff Rd, Greenville, SC",        lat:34.8354, lng:-82.3018 },
-  { id:"publix_gvl2",   name:"Publix",           chain:"publix",        emoji:"🟢", address:"3620 Pelham Rd, Greenville, SC",          lat:34.8521, lng:-82.2765 },
-  { id:"publix_spart",  name:"Publix",           chain:"publix",        emoji:"🟢", address:"1005 E Main St, Spartanburg, SC",         lat:34.9562, lng:-81.9243 },
-  { id:"publix_ander",  name:"Publix",           chain:"publix",        emoji:"🟢", address:"3131 N Main St, Anderson, SC",            lat:34.5412, lng:-82.6521 },
-  // Harris Teeter — Greenville & Upstate SC (real locations)
-  { id:"ht_gvl1",       name:"Harris Teeter",    chain:"harris_teeter", emoji:"🔵", address:"1025 Woodruff Rd, Greenville, SC",        lat:34.8341, lng:-82.3041 },
-  { id:"ht_gvl2",       name:"Harris Teeter",    chain:"harris_teeter", emoji:"🔵", address:"2 Doctors Dr, Greenville, SC",            lat:34.8521, lng:-82.3987 },
-  { id:"ht_spart",      name:"Harris Teeter",    chain:"harris_teeter", emoji:"🔵", address:"140 Dorman Centre Dr, Spartanburg, SC",   lat:34.9873, lng:-81.9654 },
-  { id:"ht_clt1",       name:"Harris Teeter",    chain:"harris_teeter", emoji:"🔵", address:"6401 Morrison Blvd, Charlotte, NC",       lat:35.1329, lng:-80.8423 },
-  { id:"ht_clt2",       name:"Harris Teeter",    chain:"harris_teeter", emoji:"🔵", address:"7116 Waverly Walk Ave, Charlotte, NC",    lat:35.0512, lng:-80.8765 },
-  // The Fresh Market
-  { id:"fresh_gvl",     name:"The Fresh Market", chain:"fresh_market",  emoji:"🟡", address:"85 Verdae Blvd, Greenville, SC",          lat:34.8199, lng:-82.3121 },
-  { id:"fresh_clt",     name:"The Fresh Market", chain:"fresh_market",  emoji:"🟡", address:"1820 E 7th St, Charlotte, NC",            lat:35.2287, lng:-80.8198 },
-  // Kroger
-  { id:"kroger_ros",    name:"Kroger",           chain:"kroger",        emoji:"🔴", address:"1000 Mansell Rd, Roswell, GA",            lat:34.0234, lng:-84.3516 },
-  { id:"kroger_clt",    name:"Kroger",           chain:"kroger",        emoji:"🔴", address:"4720 Central Ave, Charlotte, NC",         lat:35.2198, lng:-80.7654 },
-  // Walmart
-  { id:"walmart_gvl",   name:"Walmart",          chain:"walmart",       emoji:"⚡", address:"2401 Laurens Rd, Greenville, SC",         lat:34.8712, lng:-82.3421 },
-  { id:"walmart_spart", name:"Walmart",          chain:"walmart",       emoji:"⚡", address:"8490 Warren H. Abernathy Hwy, Spartanburg, SC", lat:34.9187, lng:-81.9876 },
-  { id:"walmart_clt",   name:"Walmart",          chain:"walmart",       emoji:"⚡", address:"9820 Rea Rd, Charlotte, NC",              lat:35.0521, lng:-80.8234 },
-  // Target
-  { id:"target_gvl",    name:"Target",           chain:"target",        emoji:"🎯", address:"1025 Woodruff Rd, Greenville, SC",        lat:34.8345, lng:-82.3052 },
-  { id:"target_clt",    name:"Target",           chain:"target",        emoji:"🎯", address:"6801 Northlake Mall Dr, Charlotte, NC",   lat:35.3654, lng:-80.8123 },
-  // Aldi
-  { id:"aldi_gvl",      name:"Aldi",             chain:"aldi",          emoji:"🔶", address:"3620 Pelham Rd, Greenville, SC",          lat:34.8511, lng:-82.2754 },
-  { id:"aldi_spart",    name:"Aldi",             chain:"aldi",          emoji:"🔶", address:"1606 Boiling Springs Rd, Spartanburg, SC",lat:34.9342, lng:-81.9123 },
-  // Trader Joe's
-  { id:"trader_clt",    name:"Trader Joe's",     chain:"trader_joes",   emoji:"🌺", address:"1133 Metropolitan Ave, Charlotte, NC",    lat:35.2198, lng:-80.8445 },
-  // Whole Foods
-  { id:"whole_clt",     name:"Whole Foods",      chain:"whole_foods",   emoji:"🌿", address:"6610 Fairview Rd, Charlotte, NC",         lat:35.1512, lng:-80.8298 },
-];
 
 /* ─── DIETARY OPTIONS ────────────────────────────────────────────────────────── */
 const DIETARY_OPTIONS = [
@@ -63,17 +29,18 @@ const CUISINE_OPTIONS = [
 const DAYS  = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
 const DATES = ["Jun 23","Jun 24","Jun 25","Jun 26","Jun 27","Jun 28","Jun 29"];
 
-const DEALS = [
-  { id:1,  name:"Chicken Breast",   emoji:"🍗", price:3.99,  was:6.49,  unit:"lb",      pct:38, cat:"Protein" },
-  { id:2,  name:"Atlantic Salmon",  emoji:"🐟", price:7.99,  was:12.99, unit:"lb",      pct:38, cat:"Protein" },
-  { id:3,  name:"Roma Tomatoes",    emoji:"🍅", price:0.99,  was:1.79,  unit:"lb",      pct:45, cat:"Produce" },
-  { id:4,  name:"Baby Spinach",     emoji:"🥬", price:2.49,  was:3.99,  unit:"bag",     pct:38, cat:"Produce" },
-  { id:5,  name:"Jasmine Rice",     emoji:"🍚", price:3.29,  was:4.99,  unit:"2lb bag", pct:34, cat:"Pantry"  },
-  { id:6,  name:"Garlic",           emoji:"🧄", price:0.79,  was:1.49,  unit:"head",    pct:47, cat:"Produce" },
-  { id:7,  name:"Greek Yogurt",     emoji:"🫙", price:1.29,  was:2.19,  unit:"5.3oz",   pct:41, cat:"Dairy"   },
-  { id:8,  name:"Broccoli Florets", emoji:"🥦", price:1.99,  was:3.49,  unit:"12oz",    pct:43, cat:"Produce" },
-  { id:9,  name:"Pasta (Penne)",    emoji:"🍝", price:1.19,  was:1.99,  unit:"lb",      pct:40, cat:"Pantry"  },
-  { id:10, name:"Lemon",            emoji:"🍋", price:0.49,  was:0.89,  unit:"each",    pct:45, cat:"Produce" },
+// Fallback deals shown while live deals are loading or if fetch fails
+const FALLBACK_DEALS = [
+  { id:1,  name:"Chicken Breast",   emoji:"🍗", price:3.99,  was:6.49,  unit:"lb",      pct:38, cat:"Protein", bogo:false },
+  { id:2,  name:"Atlantic Salmon",  emoji:"🐟", price:7.99,  was:12.99, unit:"lb",      pct:38, cat:"Protein", bogo:false },
+  { id:3,  name:"Roma Tomatoes",    emoji:"🍅", price:0.99,  was:1.79,  unit:"lb",      pct:45, cat:"Produce", bogo:false },
+  { id:4,  name:"Baby Spinach",     emoji:"🥬", price:2.49,  was:3.99,  unit:"bag",     pct:38, cat:"Produce", bogo:false },
+  { id:5,  name:"Jasmine Rice",     emoji:"🍚", price:3.29,  was:4.99,  unit:"2lb bag", pct:34, cat:"Pantry",  bogo:false },
+  { id:6,  name:"Garlic",           emoji:"🧄", price:0.79,  was:1.49,  unit:"head",    pct:47, cat:"Produce", bogo:false },
+  { id:7,  name:"Greek Yogurt",     emoji:"🫙", price:1.29,  was:2.19,  unit:"5.3oz",   pct:41, cat:"Dairy",   bogo:false },
+  { id:8,  name:"Broccoli Florets", emoji:"🥦", price:1.99,  was:3.49,  unit:"12oz",    pct:43, cat:"Produce", bogo:false },
+  { id:9,  name:"Pasta (Penne)",    emoji:"🍝", price:1.19,  was:1.99,  unit:"lb",      pct:40, cat:"Pantry",  bogo:false },
+  { id:10, name:"Lemon",            emoji:"🍋", price:0.49,  was:0.89,  unit:"each",    pct:45, cat:"Produce", bogo:false },
 ];
 
 const BASE_WEEK = [
@@ -116,16 +83,8 @@ const GROCERY_ITEMS = [
 ];
 
 // Pantry is now dynamic state — seeded from this default list
-const DEFAULT_PANTRY = [
-  { id:1, name:"Olive Oil",     brand:"",          emoji:"🫒", amount:"60%",  unit:"bottle", pct:60, status:"good"     },
-  { id:2, name:"Sea Salt",      brand:"Morton",    emoji:"🧂", amount:"80%",  unit:"canister",pct:80, status:"good"    },
-  { id:3, name:"Jasmine Rice",  brand:"",          emoji:"🍚", amount:"about ¼ bag", unit:"bag", pct:12, status:"low" },
-  { id:4, name:"Soy Sauce",     brand:"Kikkoman",  emoji:"🥫", amount:"half bottle", unit:"bottle",pct:55, status:"good"},
-  { id:5, name:"Honey",         brand:"",          emoji:"🍯", amount:"almost out",  unit:"jar", pct:4,  status:"critical"},
-  { id:6, name:"Garlic Powder", brand:"McCormick", emoji:"🧄", amount:"70%",  unit:"jar",    pct:70, status:"good"     },
-  { id:7, name:"Black Pepper",  brand:"",          emoji:"🫙", amount:"65%",  unit:"grinder",pct:65, status:"good"     },
-  { id:8, name:"Paprika",       brand:"McCormick", emoji:"🌶️", amount:"low",  unit:"jar",    pct:20, status:"low"      },
-];
+// Pantry starts empty — users add their own items
+const DEFAULT_PANTRY = [];
 
 const RECIPE_DB = {
   "Garlic Salmon & Rice": {
@@ -179,19 +138,6 @@ const fmt   = n => `$${Number(n).toFixed(2)}`;
 const cap   = s => s.charAt(0).toUpperCase()+s.slice(1);
 const sumBy = (arr,fn) => arr.reduce((a,b)=>a+fn(b),0);
 
-// Haversine distance in miles
-function distanceMiles(lat1,lng1,lat2,lng2){
-  const R=3958.8, dLat=(lat2-lat1)*Math.PI/180, dLng=(lng2-lng1)*Math.PI/180;
-  const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
-  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
-}
-
-function storesNearby(lat,lng,radiusMiles=15){
-  return STORE_CATALOG
-    .map(s=>({...s, distance:distanceMiles(lat,lng,s.lat,s.lng)}))
-    .filter(s=>s.distance<=radiusMiles)
-    .sort((a,b)=>a.distance-b.distance);
-}
 
 // Build weekly plan from prefs
 function buildWeekPlan(prefs){
@@ -857,77 +803,82 @@ function MealConfigPanel({mtype,cfg,onChange}){
 
 /* ─── Location Step ──────────────────────────────────────────────────────────── */
 function LocationStep({p, setP}){
-  const [locMethod, setLocMethod] = useState("gps"); // "gps" | "address"
-  const [locStatus, setLocStatus] = useState(null);  // null | "loading" | "success" | "error"
-  const [locMsg,    setLocMsg]    = useState("");
-  const [address,   setAddress]   = useState(p.userAddress||"");
-  const [addrLoading, setAddrLoading] = useState(false);
+  const [locMethod,    setLocMethod]    = useState("gps");
+  const [locStatus,    setLocStatus]    = useState(null);  // null|loading|success|error
+  const [locMsg,       setLocMsg]       = useState("");
+  const [address,      setAddress]      = useState(p.userAddress||"");
+  const [addrLoading,  setAddrLoading]  = useState(false);
   const [nearbyStores, setNearbyStores] = useState([]);
 
-  // If we already have coords, show results immediately
+  // Re-run search if we already have saved coords
   useEffect(()=>{
-    if(p.userLat&&p.userLng){
-      setLocStatus("success");
-      setLocMsg(`Location set`);
-      setNearbyStores(storesNearby(p.userLat,p.userLng));
-    }
+    if(p.userLat&&p.userLng) fetchStores(p.userLat, p.userLng);
   },[]);
 
-  const handleGPS = ()=>{
-    if(!navigator.geolocation){
-      setLocStatus("error");setLocMsg("Geolocation not supported on this device.");return;
+  // Call our serverless function which calls Google Places
+  const fetchStores = async (lat, lng) => {
+    setLocStatus("loading"); setLocMsg("Finding nearby stores…");
+    try {
+      const res = await fetch("/.netlify/functions/places", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lat, lng, radiusMiles: 15 })
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      setNearbyStores(data.stores || []);
+      setLocStatus("success");
+      setLocMsg(`Found ${data.stores?.length || 0} grocery store${data.stores?.length !== 1 ? "s" : ""} within 15 miles`);
+    } catch(err) {
+      setLocStatus("error");
+      setLocMsg("Couldn't load nearby stores. Check your connection and try again.");
+      console.error("Places error:", err);
     }
-    setLocStatus("loading");setLocMsg("Getting your location…");
+  };
+
+  const handleGPS = () => {
+    if(!navigator.geolocation){
+      setLocStatus("error"); setLocMsg("Location not supported on this device."); return;
+    }
+    setLocStatus("loading"); setLocMsg("Getting your location…");
     navigator.geolocation.getCurrentPosition(
-      pos=>{
-        const {latitude:lat,longitude:lng}=pos.coords;
-        const found=storesNearby(lat,lng);
-        setP(prev=>({...prev,userLat:lat,userLng:lng,userAddress:""}));
-        setNearbyStores(found);
-        setLocStatus("success");
-        setLocMsg(`Found ${found.length} store${found.length!==1?"s":""} within 15 miles`);
+      pos => {
+        const {latitude:lat, longitude:lng} = pos.coords;
+        setP(prev=>({...prev, userLat:lat, userLng:lng, userAddress:""}));
+        fetchStores(lat, lng);
       },
-      err=>{
+      err => {
         setLocStatus("error");
-        setLocMsg(err.code===1?"Location access denied. Try entering your address instead.":"Couldn't get location. Try your address.");
+        setLocMsg(err.code===1
+          ? "Location access denied. Please allow location access in your browser settings, or enter your address below."
+          : "Couldn't get your location. Try entering your address instead.");
       },
-      {timeout:10000}
+      { timeout: 10000, enableHighAccuracy: false }
     );
   };
 
-  const handleAddressSearch = async()=>{
+  const handleAddressSearch = async () => {
     if(!address.trim()) return;
-    setAddrLoading(true);setLocStatus("loading");setLocMsg("Searching…");
-    try{
-      // Use Nominatim (free, no key needed) for geocoding
-      const url=`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1&countrycodes=us`;
-      const res=await fetch(url,{headers:{"Accept-Language":"en","User-Agent":"SmartCartApp/1.0"}});
-      const data=await res.json();
-      if(data&&data.length>0){
-        const lat=parseFloat(data[0].lat),lng=parseFloat(data[0].lon);
-        const found=storesNearby(lat,lng);
-        setP(prev=>({...prev,userLat:lat,userLng:lng,userAddress:address}));
-        setNearbyStores(found);
-        setLocStatus("success");
-        setLocMsg(`Found ${found.length} store${found.length!==1?"s":""} within 15 miles`);
+    setAddrLoading(true); setLocStatus("loading"); setLocMsg("Looking up address…");
+    try {
+      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1&countrycodes=us`;
+      const res = await fetch(url, { headers: { "Accept-Language": "en", "User-Agent": "SmartCartApp/1.0" }});
+      const data = await res.json();
+      if(data && data.length > 0){
+        const lat = parseFloat(data[0].lat), lng = parseFloat(data[0].lon);
+        setP(prev=>({...prev, userLat:lat, userLng:lng, userAddress:address}));
+        await fetchStores(lat, lng);
       } else {
-        setLocStatus("error");setLocMsg("Address not found. Try a more specific address or zip code.");
+        setLocStatus("error"); setLocMsg("Address not found. Try a zip code or city name.");
       }
-    } catch{
-      // Fallback: simulate geocoding with demo data for Greenville area
-      const demoLat=34.8526,demoLng=-82.3940;
-      const found=storesNearby(demoLat,demoLng);
-      setP(prev=>({...prev,userLat:demoLat,userLng:demoLng,userAddress:address}));
-      setNearbyStores(found);
-      setLocStatus("success");
-      setLocMsg(`Showing stores near your area (demo mode)`);
+    } catch {
+      setLocStatus("error"); setLocMsg("Search failed. Check your connection and try again.");
     }
     setAddrLoading(false);
   };
 
   return(
     <>
-      {/* Method picker */}
       <div className="loc-method-row">
         <button className={`loc-method-btn${locMethod==="gps"?" sel":""}`} onClick={()=>setLocMethod("gps")}>
           <span className="loc-method-emoji">📍</span>
@@ -939,7 +890,6 @@ function LocationStep({p, setP}){
         </button>
       </div>
 
-      {/* GPS flow */}
       {locMethod==="gps"&&locStatus===null&&(
         <button className="address-search-btn" onClick={handleGPS}>
           📍 Share my location
@@ -948,11 +898,15 @@ function LocationStep({p, setP}){
       {locMethod==="gps"&&locStatus==="loading"&&(
         <div className="loc-status"><span className="loc-status-icon"><span className="spin">⟳</span></span>{locMsg}</div>
       )}
-
-      {/* Address flow */}
-      {locMethod==="address"&&(
+      {/* If GPS denied, offer address fallback inline */}
+      {locMethod==="gps"&&locStatus==="error"&&(
         <>
-          <input className="address-input" placeholder="123 Main St, Greenville, SC or zip code"
+          <div className="loc-status error">
+            <span className="loc-status-icon">⚠️</span>
+            <span style={{color:"rgba(255,255,255,.85)"}}>{locMsg}</span>
+          </div>
+          <div className="ob-section-label" style={{marginTop:12}}>Enter your address instead</div>
+          <input className="address-input" placeholder="Street address, city, or zip code"
             value={address} onChange={e=>setAddress(e.target.value)}
             onKeyDown={e=>{if(e.key==="Enter") handleAddressSearch();}}/>
           <button className="address-search-btn" onClick={handleAddressSearch} disabled={addrLoading||!address.trim()}>
@@ -961,38 +915,44 @@ function LocationStep({p, setP}){
         </>
       )}
 
-      {/* Status message */}
+      {locMethod==="address"&&(
+        <>
+          <input className="address-input" placeholder="Street address, city, or zip code"
+            value={address} onChange={e=>setAddress(e.target.value)}
+            onKeyDown={e=>{if(e.key==="Enter") handleAddressSearch();}}/>
+          <button className="address-search-btn" onClick={handleAddressSearch} disabled={addrLoading||!address.trim()}>
+            {addrLoading?<><span className="spin">⟳</span> Searching…</>:"🔍 Find stores near me"}
+          </button>
+        </>
+      )}
+
       {locStatus==="success"&&(
-        <div className={`loc-status success`}>
+        <div className="loc-status success">
           <span className="loc-status-icon">✅</span>
           <span>{locMsg}</span>
         </div>
       )}
-      {locStatus==="error"&&(
-        <div className={`loc-status error`}>
-          <span className="loc-status-icon">⚠️</span>
-          <span style={{color:"rgba(255,255,255,.85)"}}>{locMsg}</span>
-        </div>
-      )}
 
-      {/* Store results */}
       {nearbyStores.length>0&&(
         <>
           <div className="ob-section-label" style={{marginTop:14}}>
-            Stores within 15 miles — pick your primary
+            Nearby grocery stores — pick your primary
           </div>
           <div className="store-results">
             {nearbyStores.map(s=>(
               <div key={s.id} className={`store-result-card${p.storeId===s.id?" sel":""}`}
-                onClick={()=>setP(prev=>({...prev,storeId:s.id,storeName:s.name,storeAddress:s.address,storeChain:s.chain}))}>
+                onClick={()=>setP(prev=>({...prev,storeId:s.id,storeName:s.name,storeAddress:s.address,storeChain:s.name.toLowerCase().replace(/[^a-z]/g,"_")}))}>
                 <span className="src-emoji">{s.emoji}</span>
                 <div className="src-info">
                   <div className="src-name">{s.name}</div>
                   <div className="src-address">{s.address}</div>
+                  {s.open === true && <div style={{fontSize:10,color:"#52B788",fontWeight:700,marginTop:2}}>Open now</div>}
+                  {s.open === false && <div style={{fontSize:10,color:"#E76F51",fontWeight:700,marginTop:2}}>Closed now</div>}
                 </div>
-                <div style={{textAlign:"right",flex:"0 0 auto"}}>
+                <div style={{textAlign:"right",flexShrink:0}}>
                   <div className="src-dist">{s.distance.toFixed(1)}</div>
                   <div className="src-dist-label">miles</div>
+                  {s.rating && <div style={{fontSize:10,color:"rgba(255,255,255,.45)",marginTop:2}}>⭐ {s.rating}</div>}
                 </div>
                 <div className="ob-check" style={{marginLeft:6}}>{p.storeId===s.id?"✓":""}</div>
               </div>
@@ -1003,19 +963,20 @@ function LocationStep({p, setP}){
 
       {nearbyStores.length===0&&locStatus==="success"&&(
         <div className="no-stores-msg">
-          No supported stores found within 15 miles of your location. Try a different address or expand your search.
+          No grocery stores found within 15 miles. Try a different address or expand your search.
         </div>
       )}
     </>
   );
 }
 
+
 /* ═══ ONBOARDING WIZARD ════════════════════════════════════════════════════════ */
 const TOTAL_STEPS=7;
 
-function OnboardingWizard({initialStep=0,initialPrefs=null,onComplete}){
+function OnboardingWizard({initialStep=0,initialPrefs=null,initialMealTab="breakfast",onComplete}){
   const [step,setStep]=useState(initialStep);
-  const [activeMealTab,setActiveMealTab]=useState("breakfast");
+  const [activeMealTab,setActiveMealTab]=useState(initialMealTab);
   const [p,setP]=useState(()=>initialPrefs??{
     storeId:"",storeName:"",storeAddress:"",storeChain:"",
     userLat:null,userLng:null,userAddress:"",
@@ -1341,9 +1302,11 @@ function PantryScreen({pantry,setPantry}){
       {visible.length===0 ? (
         <div className="pantry-empty">
           <div className="pantry-empty-emoji">{search ? "🔍" : "🫙"}</div>
-          <div className="pantry-empty-title">{search ? "No matches" : "Pantry is empty"}</div>
+          <div className="pantry-empty-title">{search ? "No matches" : "Your pantry is empty"}</div>
           <div className="pantry-empty-sub">
-            {search ? `Nothing found for "${search}"` : "Add items you have at home so SmartCart knows what to work with."}
+            {search
+              ? `Nothing found for "${search}"`
+              : "Tap "+ Add item" to add things you already have at home — staples like olive oil, spices, rice. SmartCart uses your pantry to avoid recommending things you already have and to flag when you're running low."}
           </div>
         </div>
       ) : (
@@ -1514,8 +1477,21 @@ export default function SmartCart(){
   const [editMealTab,setEditMealTab]=useState("breakfast");
 
   // Pantry — persisted to localStorage separately
+  // v2 migration: discard old auto-populated default pantry, start fresh
   const [pantry,setPantry]=useState(()=>{
-    try{const s=window.localStorage?.getItem?.("sc_pantry");return s?JSON.parse(s):DEFAULT_PANTRY;}catch{return DEFAULT_PANTRY;}
+    try{
+      const s=window.localStorage?.getItem?.("sc_pantry");
+      if(!s) return DEFAULT_PANTRY;
+      const parsed=JSON.parse(s);
+      // If the stored pantry still has the old seeded "Olive Oil" item (id:1),
+      // it's the old default — clear it so users start with a blank pantry
+      const hasOldDefault = parsed.some(item=>item.id===1&&item.name==="Olive Oil"&&item.brand==="");
+      if(hasOldDefault){
+        window.localStorage.removeItem("sc_pantry");
+        return DEFAULT_PANTRY; // now []
+      }
+      return parsed;
+    }catch{return DEFAULT_PANTRY;}
   });
 
   useEffect(()=>{
@@ -1532,8 +1508,43 @@ export default function SmartCart(){
   const [checked,  setChecked]  =useState({});
   const [aiLoading,setAiLoading]=useState(false);
 
+  // Live deals — fetched from deals serverless function on load
+  const [deals,      setDeals]       =useState(FALLBACK_DEALS);
+  const [dealsStatus,setDealsStatus] =useState("idle"); // idle|loading|live|fallback
+  const [dealsSource,setDealsSource] =useState("");      // store name deals came from
+
   // End-of-week planning
   const [eowOpen,    setEowOpen]    =useState(false);
+
+  // Fetch live deals when app loads (or store changes)
+  const fetchDeals = useCallback(async () => {
+    if (!prefs.storeName || !prefs.onboarded) return;
+    setDealsStatus("loading");
+    try {
+      const res = await fetch("/.netlify/functions/deals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          storeName:    prefs.storeName,
+          storeAddress: prefs.storeAddress,
+        })
+      });
+      const data = await res.json();
+      if (data.deals && data.deals.length > 0) {
+        setDeals(data.deals);
+        setDealsStatus(data.source === "live" ? "live" : "fallback");
+        setDealsSource(data.source === "live" ? data.store : "");
+      } else {
+        setDealsStatus("fallback");
+      }
+    } catch {
+      setDealsStatus("fallback");
+    }
+  }, [prefs.storeName, prefs.storeAddress, prefs.onboarded]);
+
+  useEffect(() => {
+    fetchDeals();
+  }, [fetchDeals]);
   const [eowGrocDay, setEowGrocDay] =useState(0);           // day index 0-6 for next grocery run
   const [eowNotifOn, setEowNotifOn] =useState(true);        // notify before grocery day
   const [eowNotifDay,setEowNotifDay]=useState(1);           // days before grocery day to notify
@@ -1567,7 +1578,7 @@ export default function SmartCart(){
     const msg=userText.trim();
     setChatHistory(h=>[...h,{role:"user",text:msg}]);
     setChatInput("");setAiLoading(true);
-    const dealCtx=DEALS.map(d=>`${d.name} (${d.pct}% off, $${d.price}/${d.unit})`).join(", ");
+    const dealCtx=deals.map(d=>`${d.name} (${d.bogo?"BOGO":d.pct+"%% off"}, $${d.price}/${d.unit})`).join(", ");
     const mealCtx=Object.entries(prefs.meals).map(([mt,cfg])=>{
       if(!cfg.enabled) return`${mt}: not planned`;
       return`${mt}: ${cfg.style} style, ${cfg.skill}${cfg.style==="mealprep"?`, batch ×${cfg.portions} on ${DAYS[cfg.prepDay??0]}`:""}`;
@@ -1597,7 +1608,7 @@ export default function SmartCart(){
   const generateRecipe=async name=>{
     if(recipeAILoad) return;
     setRecipeAILoad(true);setRecipeAI(null);
-    const dealCtx=DEALS.map(d=>`${d.name} $${d.price}/${d.unit}`).join(", ");
+    const dealCtx=deals.map(d=>`${d.name} $${d.price}/${d.unit}${d.bogo?" (BOGO)":""}`).join(", ");
     try{
       const res=await fetch("/.netlify/functions/claude",{
         method:"POST",headers:{"Content-Type":"application/json"},
@@ -1619,6 +1630,7 @@ export default function SmartCart(){
         <OnboardingWizard
           initialStep={editStep??0}
           initialPrefs={editStep!==null?{...prefs}:null}
+          initialMealTab={editMealTab}
           onComplete={newPrefs=>{setPrefs({...newPrefs,onboarded:true});setEditStep(null);}}
         />
       </>
@@ -1634,8 +1646,11 @@ export default function SmartCart(){
       {/* Ticker */}
       <div className="ticker-wrap">
         <div className="ticker-inner">
-          {[...DEALS,...DEALS].map((d,i)=>(
-            <span key={i} className="ticker-item">{d.emoji} {d.name} — {d.pct}% off <span className="ticker-sep">&nbsp;·&nbsp;</span></span>
+          {[...deals,...deals].map((d,i)=>(
+            <span key={i} className="ticker-item">
+              {d.emoji} {d.name} — {d.bogo?"BOGO":d.pct+"%% off"}
+              <span className="ticker-sep">&nbsp;·&nbsp;</span>
+            </span>
           ))}
         </div>
       </div>
@@ -1704,16 +1719,32 @@ export default function SmartCart(){
               <button className="sec-link" onClick={()=>setTab("grocery")}>see all →</button>
             </div>
           </div>
+          {/* Deals loading indicator */}
+          {dealsStatus==="loading"&&(
+            <div style={{padding:"8px 20px",fontSize:12,color:"rgba(255,255,255,.6)",display:"flex",alignItems:"center",gap:6}}>
+              <span className="spin">⟳</span> Fetching this week's {prefs.storeName} deals…
+            </div>
+          )}
+          {dealsStatus==="live"&&(
+            <div style={{padding:"4px 20px 0",fontSize:11,color:"var(--green3)",fontWeight:600}}>
+              ✓ Live deals from {dealsSource}
+            </div>
+          )}
           <div className="deal-strip" style={{paddingLeft:20,paddingRight:20}}>
-            {DEALS.map(d=>(
+            {deals.map(d=>(
               <div key={d.id} className="deal-card" onClick={()=>setTab("grocery")}>
-                <div className="save-tag">−{d.pct}%</div>
+                <div className="save-tag">{d.bogo?"BOGO":"−"+d.pct+"%"}</div>
                 <span className="deal-emoji">{d.emoji}</span>
                 <div className="deal-name">{d.name}</div>
                 <div className="deal-unit">per {d.unit}</div>
                 <div className="deal-prices">
-                  <span className="deal-now">${d.price.toFixed(2)}</span>
-                  <span className="deal-was">${d.was.toFixed(2)}</span>
+                  {d.bogo
+                    ? <span className="deal-now" style={{fontSize:12}}>Buy 1 Get 1</span>
+                    : <>
+                        <span className="deal-now">${Number(d.price).toFixed(2)}</span>
+                        {d.was&&<span className="deal-was">${Number(d.was).toFixed(2)}</span>}
+                      </>
+                  }
                 </div>
               </div>
             ))}
